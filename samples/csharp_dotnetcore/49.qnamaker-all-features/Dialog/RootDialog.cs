@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.AI.QnA.Dialogs;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Extensions.Configuration;
@@ -23,13 +24,18 @@ namespace Microsoft.BotBuilderSamples.Dialog
         /// Initializes a new instance of the <see cref="RootDialog"/> class.
         /// </summary>
         /// <param name="services">Bot Services.</param>
-        public RootDialog(IBotServices services, IConfiguration configuration)
+        public RootDialog(IBotServices services, IConfiguration configuration, IBotTelemetryClient telemetryClient)
             : base("root")
         {
-            AddDialog(new QnAMakerBaseDialog(services, configuration));
+            AddDialog(new QnAMakerBaseDialog(services, configuration)
+            {
+                TelemetryClient = telemetryClient
+            });
 
-            AddDialog(new WaterfallDialog(InitialDialog)
-               .AddStep(InitialStepAsync));
+             AddDialog(new WaterfallDialog(InitialDialog)
+             {
+                 TelemetryClient = telemetryClient,
+             }.AddStep(InitialStepAsync));
 
             // The initial child Dialog to run.
             InitialDialogId = InitialDialog;

@@ -10,6 +10,11 @@ using Microsoft.BotBuilderSamples.Dialog;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Bot.Builder.Azure;
+using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Bot.Builder.ApplicationInsights;
+using Microsoft.Bot.Builder.Integration.ApplicationInsights.Core;
+using Microsoft.Bot.Builder.Integration.AspNet.Core;
 
 namespace Microsoft.BotBuilderSamples
 {
@@ -30,11 +35,41 @@ namespace Microsoft.BotBuilderSamples
             // Create the Bot Framework Adapter with error handling enabled.
             services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
 
+            // Add Application Insights services into service collection
+            services.AddApplicationInsightsTelemetry();
+
+            // Create the telemetry client.
+            services.AddSingleton<IBotTelemetryClient, BotTelemetryClient>();
+
+            // Add telemetry initializer that will set the correlation context for all telemetry items.
+            services.AddSingleton<ITelemetryInitializer, OperationCorrelationTelemetryInitializer>();
+
+            // Add telemetry initializer that sets the user ID and session ID (in addition to other bot-specific properties such as activity ID)
+            services.AddSingleton<ITelemetryInitializer, TelemetryBotIdInitializer>();
+
+            // Create the telemetry middleware to initialize telemetry gathering
+            services.AddSingleton<TelemetryInitializerMiddleware>();
+
+            // Create the telemetry middleware (used by the telemetry initializer) to track conversation events
+            services.AddSingleton<TelemetryLoggerMiddleware>();
+
             // Create the bot services(QnA) as a singleton.
             services.AddSingleton<IBotServices, BotServices>();
 
+            // Use partitioned CosmosDB for storage, instead of in-memory storage.
+            services.AddSingleton<IStorage>(
+                new CosmosDbPartitionedStorage(
+                    new CosmosDbPartitionedStorageOptions
+                    {
+                        CosmosDbEndpoint = Configuration["cosmosDb:cosmosDBEndpoint"],
+                        AuthKey = Configuration["cosmosDb:authKey"],
+                        DatabaseId = Configuration["cosmosDb:databaseId"],
+                        ContainerId = Configuration["cosmosDb:collectionId"],
+                        CompatibilityMode = false,
+                    }));
+
             // Create the storage we'll be using for User and Conversation state. (Memory is great for testing purposes.)
-            services.AddSingleton<IStorage, MemoryStorage>();
+            //services.AddSingleton<IStorage, MemoryStorage>();
 
             // Create the User state. (Used in this bot's Dialog implementation.)
             services.AddSingleton<UserState>();

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.AI.QnA;
 using Microsoft.Extensions.Configuration;
 
@@ -8,6 +9,8 @@ namespace Microsoft.BotBuilderSamples
 {
     public class BotServices : IBotServices
     {
+
+        private readonly IBotTelemetryClient _telemetryClient;
         public BotServices(IConfiguration configuration)
         {
             QnAMakerService = new QnAMaker(new QnAMakerEndpoint
@@ -15,7 +18,7 @@ namespace Microsoft.BotBuilderSamples
                 KnowledgeBaseId = configuration["QnAKnowledgebaseId"],                
                 Host = GetHostname(configuration["QnAEndpointHostName"]),
                 EndpointKey = GetEndpointKey(configuration)
-            });
+            }, null, null, _telemetryClient);
         }
 
         public QnAMaker QnAMakerService { get; private set; }
